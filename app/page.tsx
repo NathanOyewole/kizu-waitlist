@@ -1,64 +1,126 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { ArrowRight, CheckCircle2, Loader2, Terminal, Activity } from "lucide-react";
+import clsx from "clsx";
+
+export default function Waitlist() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const res = await fetch("/api/waitlist", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (res.ok) {
+      setStatus("success");
+      setMessage(data.message);
+      setEmail("");
+    } else {
+      setStatus("error");
+      setMessage(data.error || "Something went wrong");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-[#050505] text-[#EDEDED] flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden relative">
+
+      {/* Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#121212_1px,transparent_1px),linear-gradient(to_bottom,#121212_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+
+      {/* Navbar */}
+      <nav className="w-full max-w-5xl mx-auto px-6 py-8 flex justify-between items-center z-10">
+        <div className="font-bold text-xl tracking-tighter flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-500" />
+          KIZU
+        </div>
+        <div className="text-xs text-[#525252] font-mono">
+          STATUS: <span className="text-green-500">LISTENING</span>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 relative z-10 pb-20">
+
+        <div className="max-w-2xl w-full text-center space-y-8">
+
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#121212] border border-[#2A2A2A] text-[10px] uppercase tracking-wider text-[#A1A1A1] shadow-2xl">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            System v0.1 Alpha
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-[1] text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
+            Find the <br /> bleeding neck.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="text-lg text-[#A1A1A1] max-w-lg mx-auto leading-relaxed">
+            Stop guessing. Kizu scans niche communities (Reddit, X, Discord) to find exactly what users are complaining about.
           </p>
+
+          {/* Form */}
+          <div className="max-w-sm mx-auto w-full pt-6">
+            <form onSubmit={handleSubmit} className="relative">
+              <input
+                type="email"
+                placeholder="founder@gmail.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-[#333]"
+              />
+              <button
+                disabled={loading || status === "success"}
+                className={clsx(
+                  "absolute right-1 top-1 bottom-1 px-4 rounded-md text-xs font-medium transition-all flex items-center gap-2",
+                  status === "success"
+                    ? "bg-green-500/10 text-green-500"
+                    : "bg-[#EDEDED] text-black hover:bg-white"
+                )}
+              >
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : status === "success" ? <CheckCircle2 className="w-3 h-3" /> : "Access"}
+              </button>
+            </form>
+            <div className="h-6 mt-2 flex justify-center">
+              {status === "success" && <p className="text-green-500 text-xs animate-in fade-in slide-in-from-top-1">{message}</p>}
+              {status === "error" && <p className="text-red-500 text-xs animate-in fade-in slide-in-from-top-1">{message}</p>}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Visual: The Code Block */}
+        <div className="mt-16 w-full max-w-3xl relative group opacity-80 hover:opacity-100 transition-opacity">
+          <div className="absolute -inset-0.5 bg-gradient-to-b from-blue-500/20 to-purple-500/20 blur opacity-30 rounded-lg" />
+          <div className="relative bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg overflow-hidden shadow-2xl">
+            <div className="flex items-center px-4 py-3 border-b border-[#2A2A2A] bg-[#0F0F0F] gap-2">
+              <Terminal className="w-3 h-3 text-[#525252]" />
+              <span className="text-xs text-[#525252] font-mono">kizu-cli — analysis</span>
+            </div>
+            <div className="p-6 font-mono text-xs space-y-3">
+              <div className="text-[#525252]">$ kizu scan --target=r/SaaS</div>
+              <div className="text-blue-500">[SCANNING] 452 posts found...</div>
+              <div className="text-[#EDEDED] pl-4 border-l border-[#333] py-1">
+                <span className="text-[#525252] block mb-1">// High Signal Found</span>
+                "I would pay $50/mo for a tool that just handles Stripe tax compliance automatically for Next.js apps."
+              </div>
+              <div className="text-green-500">$ Opportunity detected: High Intent (92/100)</div>
+              <div className="text-[#525252] animate-pulse">_</div>
+            </div>
+          </div>
         </div>
+
       </main>
     </div>
   );
