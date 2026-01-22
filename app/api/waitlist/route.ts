@@ -1,38 +1,42 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { createClient } from '@supabase/supabase-js';
 import { Resend } from "resend";
 
-// 1. Prisma Singleton (Prevents connection limit errors in development)
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Initialize Supabase (Admin access)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-// 2. Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
-    // Basic Validation
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    // 3. Save to Database
-    try {
-      await prisma.lead.create({ data: { email } });
-    } catch (e) {
-      // Prisma error code P2002 means unique constraint violation (duplicate)
-      return NextResponse.json({ message: "You're already on the list, boss." });
+    // 1. Save to Supabase
+    // We assume your table is named 'Lead' and has an 'email' column
+    const { error: dbError } = await supabase
+      .from('Lead')
+      .insert([{ email }]);
+
+    if (dbError) {
+      // code '23505' is Postgres for "Unique Violation" (Duplicate)
+      if (dbError.code === '23505') {
+        return NextResponse.json({ message: "You're already on the list, boss." });
+      }
+      console.error("DB Error:", dbError);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
-    // 4. Send the "Hook Mail" (Only runs if DB save was successful)
+    // 2. Send the "Hook Mail"
     try {
       await resend.emails.send({
-        // ⚠️ IMPORTANT: If you haven't verified 'kizu.app' on Resend yet, 
-        // change this to 'onboarding@resend.dev' to test.
-        from: 'Kizu <onboarding@resend.dev>',
+        from: 'Kizu <onboarding@resend.dev>', // Change to 'onboarding@resend.dev' if testing
         to: email,
         subject: 'Your Access to Kizu',
         html: `
@@ -48,14 +52,12 @@ export async function POST(request: Request) {
         `
       });
     } catch (emailError) {
-      console.error("Email failed to send:", emailError);
-      // We log the error but don't stop the user flow.
+      console.error("Email failed:", emailError);
     }
 
     return NextResponse.json({ message: "Access requested. Check your inbox." });
 
   } catch (error) {
-    console.error("Server Error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
