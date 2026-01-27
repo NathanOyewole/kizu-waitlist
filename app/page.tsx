@@ -26,7 +26,8 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
 
-    const liveUrl = "https://kizu-waitlist.vercel.app"; // 👈 Hardcoded for emails
+    // 👇 UPDATED: Your actual Vercel URL
+    const liveUrl = "https://kizu-waitlist.vercel.app";
 
     try {
       // 1. Call our Next.js API Route
@@ -45,7 +46,9 @@ export default function Home() {
 
       // 2. Trigger EmailJS (Client Side)
       if (data.status === 'new') {
-        emailjs.send(
+        console.log("Attempting to send email to:", email); // 👈 Debug Log
+
+        await emailjs.send(
           process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
           process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
           {
@@ -54,7 +57,8 @@ export default function Home() {
             referral_link: `${liveUrl}?ref=${data.referral_code}`
           },
           process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-        ).catch(err => console.error("Email failed:", err));
+        );
+        console.log("Email sent successfully!");
       }
 
       // 3. Update UI
@@ -63,15 +67,16 @@ export default function Home() {
       setReferralCode(data.referral_code);
 
     } catch (err: any) {
+      console.error("Error:", err); // 👈 Check your browser console for this
       setStatus("error");
-      setMessage(err.message);
+      setMessage(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   const copyToClipboard = () => {
-    const liveUrl = "https://kizu.systems";
+    const liveUrl = "https://kizu-waitlist.vercel.app";
     navigator.clipboard.writeText(`${liveUrl}?ref=${referralCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -137,7 +142,7 @@ export default function Home() {
                   </p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-3 py-2 text-xs font-mono text-[#737373] truncate">
-                      https://kizu.systems?ref={referralCode}
+                      https://kizu-waitlist.vercel.app?ref={referralCode}
                     </div>
                     <button
                       onClick={copyToClipboard}
