@@ -26,7 +26,7 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
 
-    const liveUrl = "https://kizu.systems"; // 👈 Hardcoded for emails
+    const liveUrl = "https://kizu-waitlist.vercel.app"; // 👈 Hardcoded for emails
 
     try {
       // 1. Call our Next.js API Route
