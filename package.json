@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.91.0",
     "@vercel/analytics": "^1.6.1",
     "clsx": "^2.1.1",
